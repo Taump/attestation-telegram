@@ -1,0 +1,15 @@
+{
+  "name": "attestation-telegram",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Obyte Foundation",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "telegraf": "^4.16.3",
+    "attestation-kit": "git+https://github.com/taump/attestation-kit.git#feat/init"
+  }
+}
