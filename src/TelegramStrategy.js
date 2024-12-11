@@ -36,9 +36,7 @@ class TelegramStrategy extends BaseStrategy {
         if (Validation.isWalletAddress(walletAddress)) {
             const query = new URLSearchParams({ address: walletAddress });
             const encodedData = encodeToBase64(query);
-            const url = TELEGRAM_BASE_URL + process.env.TELEGRAM_BOT_USERNAME + `?start=${encodedData}`;
-
-            return url;
+            return TELEGRAM_BASE_URL + process.env.TELEGRAM_BOT_USERNAME + `?start=${encodedData}`;
         } else {
             throw new ErrorWithMessage(dictionary.common.INVALID_WALLET_ADDRESS);
         }
