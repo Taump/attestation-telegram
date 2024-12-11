@@ -7,7 +7,7 @@ const { utils, BaseStrategy, dictionary } = require('attestation-kit');
 
 const TELEGRAM_BASE_URL = 'https://t.me/';
 
-const { logger, encodeToBase64, ErrorWithMessage, Validation } = utils;
+const { encodeToBase64, ErrorWithMessage, Validation } = utils;
 
 /**
  * TelegramStrategy class extends BaseStrategy for Telegram-based attestation.
@@ -141,7 +141,7 @@ class TelegramStrategy extends BaseStrategy {
 
                 await ctx.scene.enter('inputAddressScene');
             } catch (err) {
-                logger.error('Unknown error in /attest command:', err);
+                this.logger.error('Unknown error in /attest command:', err);
                 ctx.reply(err.message);
             }
         });
@@ -176,13 +176,13 @@ class TelegramStrategy extends BaseStrategy {
                             return await ctx.scene.leave();
                         }
                     } else {
-                        logger.error("if order not found (It's strange, but we should handle it)");
+                        this.logger.error("if order not found (It's strange, but we should handle it)");
 
                         await ctx.reply(dictionary.telegram.COMMAND_ATTESTATION_AGAIN);
                         await ctx.scene.leave();
                     }
                 } catch (err) {
-                    logger.error('Error while processing address:', err);
+                    this.logger.error('Error while processing address:', err);
                     return ctx.reply('An error occurred while processing your request. Please try again later.');
                 }
             } else {
@@ -193,9 +193,9 @@ class TelegramStrategy extends BaseStrategy {
 
         this.client.launch()
             .then(() => {
-                logger.info('Telegram attestation service has been started');
+                this.logger.info('Telegram attestation service has been started');
             }).catch((err) => {
-                logger.error('Failed to launch Telegram bot:', err);
+                this.logger.error('Failed to launch Telegram bot:', err);
             });
 
         // Enable graceful stop
