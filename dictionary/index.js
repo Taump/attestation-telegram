@@ -14,7 +14,7 @@
  * 
  * IMPORTANT:
  * Before starting the application, make sure to set the desired locale using `dictionary.setLocale("provider_name");`.
- * For example, to use the Telegram locale, call `dictionary.setLocale("telegram");` before initializing the attestation service.
+ * For example, to use the Telegram locale, call `dictionary.set("telegram");` before initializing the attestation service.
  * 
  * These messages will be used by the application to communicate with users
  * during the attestation process.
