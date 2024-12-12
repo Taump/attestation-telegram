@@ -7,8 +7,9 @@ const { utils, BaseStrategy, dictionary } = require('attestation-kit');
 
 const TELEGRAM_BASE_URL = 'https://t.me/';
 
-const { encodeToBase64, ErrorWithMessage, Validation } = utils;
+const { encodeToBase64, Validation } = utils;
 
+const { ErrorWithMessage } = utils.ErrorWithMessage;
 /**
  * TelegramStrategy class extends BaseStrategy for Telegram-based attestation.
  * @class
@@ -32,7 +33,7 @@ class TelegramStrategy extends BaseStrategy {
         }
     }
 
-    static getProviderInstruction(walletAddress) {
+    getFirstPairedInstruction(walletAddress) {
         if (Validation.isWalletAddress(walletAddress)) {
             const query = new URLSearchParams({ address: walletAddress });
             const encodedData = encodeToBase64(query);
@@ -93,12 +94,11 @@ class TelegramStrategy extends BaseStrategy {
             if (address) {
                 const userDataMessage = this.viewAttestationData(id, username);
                 await ctx.reply(userDataMessage, { parse_mode: 'HTML' });
-                await this.db.createAttestationOrder(this.provider, { username, userId: id }, true);
 
+                await this.db.createAttestationOrder(this.provider, { username, userId: id }, true);
                 await this.db.updateWalletAddressInAttestationOrder(this.provider, { userId: id, username }, address);
 
-                const verifyUrl = this.getVerifyUrl(address, this.provider, id, username);
-                this.logger.error('address:', dictionary.telegram);
+                const verifyUrl = this.getVerifyUrl(address, this.provider, { userId: id, username });
 
                 await ctx.reply(dictionary.common.HAVE_TO_VERIFY, Markup.inlineKeyboard([
                     Markup.button.url('Verify', verifyUrl)
@@ -106,7 +106,6 @@ class TelegramStrategy extends BaseStrategy {
 
                 await ctx.reply(dictionary.telegram.REMOVE_ADDRESS);
             } else {
-                this.logger.error('address:', Object.keys(dictionary));
                 ctx.reply(dictionary.telegram.ATTESTATION_COMMAND);
             }
         });
