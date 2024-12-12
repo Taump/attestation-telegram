@@ -7,7 +7,7 @@ const { utils, BaseStrategy, dictionary } = require('attestation-kit');
 
 const TELEGRAM_BASE_URL = 'https://t.me/';
 
-const { encodeToBase64, Validation } = utils;
+const { encodeToBase64 } = utils;
 
 const { ErrorWithMessage } = utils.ErrorWithMessage;
 /**
@@ -34,7 +34,7 @@ class TelegramStrategy extends BaseStrategy {
     }
 
     getFirstPairedInstruction(walletAddress) {
-        if (Validation.isWalletAddress(walletAddress)) {
+        if (this.validate.isWalletAddress(walletAddress)) {
             const query = new URLSearchParams({ address: walletAddress });
             const encodedData = encodeToBase64(query);
             return TELEGRAM_BASE_URL + process.env.TELEGRAM_BOT_USERNAME + `?start=${encodedData}`;
