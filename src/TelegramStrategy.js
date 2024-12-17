@@ -49,6 +49,10 @@ class TelegramStrategy extends BaseStrategy {
         device.sendMessageToDevice(deviceAddress, 'text', dictionary.wallet.ASK_ADDRESS);
     }
 
+    onAddressAdded(deviceAddress, walletAddress) {
+        device.sendMessageToDevice(deviceAddress, 'text', dictionary.wallet.ASK_VERIFY_FN(walletAddress));
+    }
+
     viewAttestationData(id, username) {
         return '<b>Your data for attestation:</b> \n\n' + `ID: ${id ?? 'N/A'} \n` + `Username: ${username ? BaseStrategy.escapeHtml(username) : 'N/A'}\n\n`;
     }
