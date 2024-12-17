@@ -2,6 +2,7 @@ const { Telegraf, Scenes, session, Markup } = require('telegraf');
 const isArray = require('lodash/isArray');
 const eventBus = require('ocore/event_bus.js');
 const conf = require('ocore/conf');
+const device = require('ocore/device');
 
 const { utils, BaseStrategy, dictionary } = require('attestation-kit');
 
@@ -41,6 +42,11 @@ class TelegramStrategy extends BaseStrategy {
         } else {
             throw new ErrorWithMessage(dictionary.common.INVALID_WALLET_ADDRESS);
         }
+    }
+
+    onWalletPaired(from_address) {
+        device.sendMessageToDevice(from_address, 'text', dictionary.common.WELCOME);
+        device.sendMessageToDevice(from_address, 'text', dictionary.wallet.ASK_ADDRESS);
     }
 
     viewAttestationData(id, username) {
