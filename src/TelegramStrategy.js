@@ -44,9 +44,9 @@ class TelegramStrategy extends BaseStrategy {
         }
     }
 
-    onWalletPaired(from_address) {
-        device.sendMessageToDevice(from_address, 'text', dictionary.common.WELCOME);
-        device.sendMessageToDevice(from_address, 'text', dictionary.wallet.ASK_ADDRESS);
+    onWalletPaired(deviceAddress) {
+        device.sendMessageToDevice(deviceAddress, 'text', dictionary.common.WELCOME);
+        device.sendMessageToDevice(deviceAddress, 'text', dictionary.wallet.ASK_ADDRESS);
     }
 
     viewAttestationData(id, username) {
