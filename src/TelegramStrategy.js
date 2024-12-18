@@ -60,12 +60,13 @@ class TelegramStrategy extends BaseStrategy {
     }
 
     onAttested(deviceAddress, { data, unit }) {
-        this.logger.error('onAttested', deviceAddress, data, unit)
+        this.logger.error('onAttested', deviceAddress, data, unit);
+
         if (unit && data.userId && deviceAddress) {
             const message = `Attestation unit: <a href="https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${encodeURIComponent(unit)}">${unit}</a>`;
             this.client.telegram.sendMessage(data.userId, message, { parse_mode: 'HTML' });
 
-            return device.sendMessageToDevice(from_address, 'text', `Attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit}`);
+            return device.sendMessageToDevice(deviceAddress, 'text', `Attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit}`);
         }
     }
 
