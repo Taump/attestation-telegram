@@ -61,7 +61,7 @@ class TelegramStrategy extends BaseStrategy {
             const message = `Attestation unit: <a href="https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${encodeURIComponent(unit)}">${unit}</a>`;
             this.client.telegram.sendMessage(data.userId, message, { parse_mode: 'HTML' });
 
-            // TODO: send to device
+            return device.sendMessageToDevice(from_address, 'text', `Attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit}`);
         }
     }
 
