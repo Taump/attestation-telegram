@@ -150,7 +150,7 @@ class TelegramStrategy extends BaseStrategy {
             const userDataMessage = this.viewAttestationData(id, username);
 
             try {
-                await this.db.createAttestationOrder({ username, userId: id }, true);
+                await this.db.createAttestationOrder({ username, userId: id }, null, true);
 
                 await ctx.reply(userDataMessage, { parse_mode: 'HTML' });
 
