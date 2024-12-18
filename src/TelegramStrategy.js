@@ -4,6 +4,7 @@ const conf = require('ocore/conf');
 const device = require('ocore/device');
 
 const { utils, BaseStrategy, dictionary } = require('attestation-kit');
+const { postAttestationProfile } = require('attestation-kit/src/utils');
 
 const TELEGRAM_BASE_URL = 'https://t.me/';
 
@@ -30,15 +31,20 @@ class TelegramStrategy extends BaseStrategy {
         }
     }
 
-    // getFirstPairedInstruction(walletAddress) {
-    //     if (this.validate.isWalletAddress(walletAddress)) { 
-    //         const query = new URLSearchParams({ address: walletAddress });
-    //         const encodedData = encodeToBase64(query);
-    //         return TELEGRAM_BASE_URL + process.env.TELEGRAM_BOT_USERNAME + `?start=${encodedData}`;
-    //     } else {
-    //         throw new ErrorWithMessage(dictionary.common.INVALID_WALLET_ADDRESS);
-    //     }
-    // }
+    onAttestedOnlyWalletAddress(deviceAddress, walletAddress) {
+        if (this.validate.isWalletAddress(walletAddress)) {
+            // TODO: check session again
+
+            const query = new URLSearchParams({ address: deviceAddress });
+            const encodedData = encodeToBase64(query);
+            const url = TELEGRAM_BASE_URL + process.env.TELEGRAM_BOT_USERNAME + `?start=${encodedData}`;
+
+            device.sendMessageToDevice(deviceAddress, 'text', `Your wallet address was successfully verify: ${walletAddress}`);
+            device.sendMessageToDevice(deviceAddress, 'text', `Let's continue with the next step in telegram: \n ${url}`);
+        } else {
+            return device.sendMessageToDevice(deviceAddress, 'text', dictionary.common.INVALID_WALLET_ADDRESS);
+        }
+    }
 
     onWalletPaired(deviceAddress) {
         device.sendMessageToDevice(deviceAddress, 'text', dictionary.common.WELCOME);
@@ -108,17 +114,48 @@ class TelegramStrategy extends BaseStrategy {
             if (address) {
                 const userDataMessage = this.viewAttestationData(userId, username, address);
                 await ctx.reply(userDataMessage, { parse_mode: 'HTML' });
+                const orderId = await this.db.createAttestationOrder({ username, userId }, address, true);
 
-                await this.db.createAttestationOrder({ username, userId: id }, true);
-                await this.db.updateWalletAddressInAttestationOrder({ userId: id, username }, address);
+                if (deviceAddress) {
+                    await this.db.updateDeviceAddressInAttestationOrder(orderId, deviceAddress);
+                }
 
-                const verifyUrl = this.getVerifyUrl(address, { userId: id, username });
+                await ctx.reply('Are you confirm this information?', Markup.inlineKeyboard([
+                    [Markup.button.callback('Yes', 'attestedCallbackAction')],
+                    [Markup.button.callback('No, I want to change', 'removeCallbackAction')]
+                ]).resize().oneTime());
 
-                await ctx.reply(dictionary.common.HAVE_TO_VERIFY, Markup.inlineKeyboard([
-                    Markup.button.url('Verify', verifyUrl)
-                ]));
+                this.client.action('attestedCallbackAction', async (ctx) => {
+                    const dataObj = { username, userId };
 
-                await ctx.reply(dictionary.telegram.REMOVE_ADDRESS);
+                    try {
+                        await ctx.answerCbQuery();
+                        await ctx.deleteMessage();
+
+                        const unit = await utils.postAttestationProfile(address, dataObj);
+
+                        await this.db.updateUnitAndChangeStatus(dataObj, address, unit);
+
+                        await postAttestationProfile(address, dataObj);
+                    } catch (err) {
+                        await ctx.reply('Unknown error occurred');
+                    }
+                });
+
+                this.client.action('removeCallbackAction', async (ctx) => {
+                    try { 
+                        await this.db.removeWalletAddressInAttestationOrder({ username, userId }, address);
+                        this.sessionStore.deleteSessionWalletAddress(deviceAddress);
+                        
+                        await ctx.scene.enter('inputAddressScene');
+                    } catch (err) {
+                        await ctx.reply('removeCallbackAction: Unknown error occurred');
+                    } finally {
+                        await ctx.answerCbQuery();
+                        await ctx.deleteMessage();
+                    }
+                });
+
             } else {
                 ctx.reply(dictionary.telegram.ATTESTATION_COMMAND);
             }
