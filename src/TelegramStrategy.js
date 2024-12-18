@@ -30,10 +30,8 @@ class TelegramStrategy extends BaseStrategy {
         }
     }
 
-    verifyWalletAddress(deviceAddress, walletAddress) {
+    walletAddressVerified(deviceAddress, walletAddress) {
         if (this.validate.isWalletAddress(walletAddress)) {
-            // TODO: check session again 
-
             const query = new URLSearchParams({ address: deviceAddress });
             const encodedData = encodeToBase64(query);
             const url = TELEGRAM_BASE_URL + process.env.TELEGRAM_BOT_USERNAME + `?start=${encodedData}`;
@@ -62,6 +60,7 @@ class TelegramStrategy extends BaseStrategy {
     }
 
     onAttested(deviceAddress, { data, unit }) {
+        this.logger.error('onAttested', deviceAddress, data, unit)
         if (unit && data.userId && deviceAddress) {
             const message = `Attestation unit: <a href="https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${encodeURIComponent(unit)}">${unit}</a>`;
             this.client.telegram.sendMessage(data.userId, message, { parse_mode: 'HTML' });
@@ -131,21 +130,30 @@ class TelegramStrategy extends BaseStrategy {
                         await ctx.answerCbQuery();
                         await ctx.deleteMessage();
 
+                        const order = await this.db.getAttestationOrders({ data: dataObj, address, excludeAttested: true });
+
                         const unit = await utils.postAttestationProfile(address, dataObj);
 
                         await this.db.updateUnitAndChangeStatus(dataObj, address, unit);
 
-                        await postAttestationProfile(address, dataObj);
+                        const message = `Attestation unit: <a href="https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${encodeURIComponent(unit)}">${unit}</a>`;
+
+                        ctx.reply(message, { parse_mode: 'HTML' });
+
+                        if (order.user_device_address) {
+                            return device.sendMessageToDevice(order.user_device_address, 'text', `Attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit}`);
+                        }
+
                     } catch (err) {
                         await ctx.reply('Unknown error occurred');
                     }
                 });
 
                 this.client.action('removeCallbackAction', async (ctx) => {
-                    try { 
+                    try {
                         await this.db.removeWalletAddressInAttestationOrder({ username, userId }, address);
                         this.sessionStore.deleteSessionWalletAddress(deviceAddress);
-                        
+
                         await ctx.scene.enter('inputAddressScene');
                     } catch (err) {
                         await ctx.reply('removeCallbackAction: Unknown error occurred');
