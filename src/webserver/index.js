@@ -5,7 +5,7 @@ const verifyUrlController = require('./controllers/verifyUrlController');
 
 module.exports = async () => {
     try {
-        fastifyInstance.get('/verify/:service_provider/:address', verifyUrlController);
+        fastifyInstance.get('/verify/:address', verifyUrlController);
         await fastifyInstance.listen({ port: conf.webserverPort, host: '0.0.0.0' });
 
         utils.logger.info('Server running on port', conf.webserverPort);

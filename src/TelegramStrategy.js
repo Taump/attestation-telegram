@@ -1,24 +1,21 @@
 const { Telegraf, Scenes, session, Markup } = require('telegraf');
 const isArray = require('lodash/isArray');
-const eventBus = require('ocore/event_bus.js');
 const conf = require('ocore/conf');
+const device = require('ocore/device');
 
 const { utils, BaseStrategy, dictionary } = require('attestation-kit');
 
 const TELEGRAM_BASE_URL = 'https://t.me/';
 
-const { encodeToBase64 } = utils;
+const { encodeToBase64, postAttestationProfile } = utils;
 
-const { ErrorWithMessage } = utils.ErrorWithMessage;
+// const { ErrorWithMessage } = utils.ErrorWithMessage;
 /**
  * TelegramStrategy class extends BaseStrategy for Telegram-based attestation.
  * @class
  * @extends BaseStrategy
  */
 class TelegramStrategy extends BaseStrategy {
-
-    static provider = 'telegram';
-
     /**
     * Constructs a new TelegramStrategy instance.
     * @param {object} options - Configuration options for the strategy.
@@ -33,18 +30,44 @@ class TelegramStrategy extends BaseStrategy {
         }
     }
 
-    getFirstPairedInstruction(walletAddress) {
+    walletAddressVerified(deviceAddress, walletAddress) {
         if (this.validate.isWalletAddress(walletAddress)) {
-            const query = new URLSearchParams({ address: walletAddress });
+            const query = new URLSearchParams({ address: deviceAddress });
             const encodedData = encodeToBase64(query);
-            return TELEGRAM_BASE_URL + process.env.TELEGRAM_BOT_USERNAME + `?start=${encodedData}`;
+            const url = TELEGRAM_BASE_URL + process.env.TELEGRAM_BOT_USERNAME + `?start=${encodedData}`;
+
+            device.sendMessageToDevice(deviceAddress, 'text', `Your wallet address was successfully verify: ${walletAddress}`);
+            device.sendMessageToDevice(deviceAddress, 'text', `Let's continue with the next step in telegram: \n ${url}`);
         } else {
-            throw new ErrorWithMessage(dictionary.common.INVALID_WALLET_ADDRESS);
+            return device.sendMessageToDevice(deviceAddress, 'text', dictionary.common.INVALID_WALLET_ADDRESS);
         }
     }
 
-    viewAttestationData(id, username) {
-        return '<b>Your data for attestation:</b> \n\n' + `ID: ${id ?? 'N/A'} \n` + `Username: ${username ? BaseStrategy.escapeHtml(username) : 'N/A'}\n\n`;
+    onWalletPaired(deviceAddress) {
+        device.sendMessageToDevice(deviceAddress, 'text', dictionary.common.WELCOME);
+        device.sendMessageToDevice(deviceAddress, 'text', dictionary.wallet.ASK_ADDRESS);
+    }
+
+    onAddressAdded(deviceAddress, walletAddress) {
+        device.sendMessageToDevice(deviceAddress, 'text', dictionary.wallet.ASK_VERIFY_FN(walletAddress));
+    }
+
+    viewAttestationData(id, username, address) {
+        return '<b>Your data for attestation:</b> \n\n'
+            + `ID: ${id ?? 'N/A'} \n`
+            + `Username: ${username ? BaseStrategy.escapeHtml(username) : 'N/A'}`
+            + (address ? `\nWallet address: <a href='https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${address}'>${address}</a>` : '');
+    }
+
+    onAttested(deviceAddress, { data, unit }) {
+        this.logger.error('onAttested', deviceAddress, data, unit);
+
+        if (unit && data.userId && deviceAddress) {
+            const message = `Attestation unit: <a href="https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${encodeURIComponent(unit)}">${unit}</a>`;
+            this.client.telegram.sendMessage(data.userId, message, { parse_mode: 'HTML' });
+
+            return device.sendMessageToDevice(deviceAddress, 'text', `Attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit}`);
+        }
     }
 
     /**
@@ -62,49 +85,85 @@ class TelegramStrategy extends BaseStrategy {
 
         const stage = new Scenes.Stage([inputAddressScene]);
 
-        eventBus.on('ATTESTATION_KIT_ATTESTED', ({ data, provider, unit }) => {
-            if (unit && provider === this.provider && data.userId) {
-                const message = `Attestation unit: <a href="https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${encodeURIComponent(unit)}">${unit}</a>`;
-                this.client.telegram.sendMessage(data.userId, message, { parse_mode: 'HTML' });
-            }
-        });
-
         this.client.use(session());
         this.client.use(stage.middleware());
 
         this.client.start(async (ctx) => {
             let address;
+            let deviceAddress;
 
             try {
                 if (ctx.payload) {
                     const decodedData = Buffer.from(ctx.payload, 'base64').toString('utf-8');
                     const decodedPayload = decodeURIComponent(decodedData);
                     const params = new URLSearchParams(decodedPayload);
-                    address = params.get('address');
+
+                    deviceAddress = params.get('address');
+                    address = this.sessionStore.getSessionWalletAddress(deviceAddress);
                 }
             } catch {
                 console.error('Error while decoding payload');
                 return ctx.reply('UNKNOWN_ERROR, please try again later');
             }
 
-            const { username, id } = ctx.update.message.from;
+            const { username, id: userId } = ctx.update.message.from;
 
             await ctx.reply(dictionary.common.WELCOME);
 
             if (address) {
-                const userDataMessage = this.viewAttestationData(id, username);
+                const userDataMessage = this.viewAttestationData(userId, username, address);
                 await ctx.reply(userDataMessage, { parse_mode: 'HTML' });
+                const orderId = await this.db.createAttestationOrder({ username, userId }, address, true);
 
-                await this.db.createAttestationOrder(this.provider, { username, userId: id }, true);
-                await this.db.updateWalletAddressInAttestationOrder(this.provider, { userId: id, username }, address);
+                if (deviceAddress) {
+                    await this.db.updateDeviceAddressInAttestationOrder(orderId, deviceAddress);
+                }
 
-                const verifyUrl = this.getVerifyUrl(address, this.provider, { userId: id, username });
+                await ctx.reply('Are you confirm this information?', Markup.inlineKeyboard([
+                    [Markup.button.callback('Yes', 'attestedCallbackAction')],
+                    [Markup.button.callback('No, I want to change', 'removeCallbackAction')]
+                ]).resize().oneTime());
 
-                await ctx.reply(dictionary.common.HAVE_TO_VERIFY, Markup.inlineKeyboard([
-                    Markup.button.url('Verify', verifyUrl)
-                ]));
+                this.client.action('attestedCallbackAction', async (ctx) => {
+                    const dataObj = { username, userId };
 
-                await ctx.reply(dictionary.telegram.REMOVE_ADDRESS);
+                    try {
+                        await ctx.answerCbQuery();
+                        await ctx.deleteMessage();
+
+                        const order = await this.db.getAttestationOrders({ data: dataObj, address, excludeAttested: true });
+
+                        const unit = await utils.postAttestationProfile(address, dataObj);
+
+                        await this.db.updateUnitAndChangeStatus(dataObj, address, unit);
+
+                        const message = `Attestation unit: <a href="https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${encodeURIComponent(unit)}">${unit}</a>`;
+
+                        ctx.reply(message, { parse_mode: 'HTML' });
+
+                        if (order.user_device_address) {
+                            return device.sendMessageToDevice(order.user_device_address, 'text', `Attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit}`);
+                        }
+
+                    } catch (err) {
+                        await ctx.reply('Unknown error occurred');
+                    }
+                });
+
+                this.client.action('removeCallbackAction', async (ctx) => {
+                    try {
+                        await this.db.removeWalletAddressInAttestationOrder({ username, userId }, address);
+                        this.sessionStore.deleteSessionWalletAddress(deviceAddress);
+
+                        await ctx.scene.enter('inputAddressScene');
+                    } catch (err) {
+                        await ctx.reply('removeCallbackAction: Unknown error occurred');
+                    } finally {
+                        await ctx.answerCbQuery();
+                        await ctx.deleteMessage();
+                    }
+                });
+
             } else {
                 ctx.reply(dictionary.telegram.ATTESTATION_COMMAND);
             }
@@ -112,7 +171,7 @@ class TelegramStrategy extends BaseStrategy {
 
         this.client.command('remove', async (ctx) => {
             try {
-                await this.db.removeWalletAddressInAttestationOrder(this.provider, { userId: ctx.update.message.from.id, username: ctx.update.message.from.username });
+                await this.db.removeWalletAddressInAttestationOrder({ userId: ctx.update.message.from.id, username: ctx.update.message.from.username });
                 await ctx.scene.enter('inputAddressScene');
             } catch (err) {
                 if (err.code === 'ALREADY_ATTESTED') {
@@ -132,7 +191,7 @@ class TelegramStrategy extends BaseStrategy {
             const userDataMessage = this.viewAttestationData(id, username);
 
             try {
-                await this.db.createAttestationOrder(this.provider, { username, userId: id }, true);
+                await this.db.createAttestationOrder({ username, userId: id }, null, true);
 
                 await ctx.reply(userDataMessage, { parse_mode: 'HTML' });
 
@@ -150,19 +209,19 @@ class TelegramStrategy extends BaseStrategy {
 
             if (this.validate.isWalletAddress(walletAddress)) {
                 try {
-                    const orders = await this.db.getAttestationOrders({ serviceProvider: this.provider, data: { userId: id, username } }, true);
+                    const orders = await this.db.getAttestationOrders({ data: { userId: id, username } }, true);
 
                     if (isArray(orders) && orders.length > 0) {
                         const isDataHasBeenAlreadyAttested = orders.find(order => order.user_wallet_address === walletAddress && order.status === 'attested');
                         if (isDataHasBeenAlreadyAttested) {
-                            await ctx.reply(dictionary.common.ALREADY_ATTESTED(this.provider, walletAddress, { username, userId: id }));
+                            await ctx.reply(dictionary.common.ALREADY_ATTESTED(walletAddress, { username, userId: id }));
                             return await ctx.scene.leave();
                         } else {
                             await ctx.reply(dictionary.common.ADDRESS_RECEIVED);
 
-                            await this.db.updateWalletAddressInAttestationOrder(this.provider, { userId: id, username }, walletAddress);
+                            await this.db.updateWalletAddressInAttestationOrder({ userId: id, username }, walletAddress);
 
-                            const verifyUrl = this.getVerifyUrl(walletAddress, this.provider, { userId: id, username });
+                            const verifyUrl = this.getVerifyUrl(walletAddress, { userId: id, username });
 
                             await ctx.reply(dictionary.common.HAVE_TO_VERIFY, Markup.inlineKeyboard([
                                 Markup.button.url('Verify', verifyUrl)

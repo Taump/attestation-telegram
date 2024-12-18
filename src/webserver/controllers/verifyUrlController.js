@@ -3,21 +3,21 @@ const { db, utils } = require("attestation-kit");
 const { logger, Validation, generateParingUrlWithVerifyData, ErrorWithMessage } = utils;
 
 module.exports = async (request, reply) => {
-    const { service_provider, address } = request.params;
+    const { address } = request.params;
     const data = request.query;
 
     try {
-        if (!Validation.isServiceProvider(service_provider) || !Validation.isWalletAddress(address) || !Validation.isDataObject(data)) {
-            throw new ErrorWithMessage('Invalid service provider', { code: "INVALID_DATA" });
+        if (!Validation.isWalletAddress(address) || !Validation.isDataObject(data)) {
+            throw new ErrorWithMessage('Invalid data or address', { code: "INVALID_DATA" });
         }
 
-        const order = await db.getAttestationOrders({ serviceProvider: service_provider, data, address });
+        const order = await db.getAttestationOrders({ data, address });
 
         if (order) {
             if (order.status === 'attested') {
                 throw new ErrorWithMessage('Order already attested', { code: "ORDER_ALREADY_ATTESTED" });
             } else {
-                const pairingUrlWithVerifyData = generateParingUrlWithVerifyData(service_provider, address, data);
+                const pairingUrlWithVerifyData = generateParingUrlWithVerifyData(address, data);
                 reply.redirect(pairingUrlWithVerifyData);
             }
         } else {
