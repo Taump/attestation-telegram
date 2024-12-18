@@ -4,11 +4,10 @@ const conf = require('ocore/conf');
 const device = require('ocore/device');
 
 const { utils, BaseStrategy, dictionary } = require('attestation-kit');
-const { postAttestationProfile } = require('attestation-kit/src/utils');
 
 const TELEGRAM_BASE_URL = 'https://t.me/';
 
-const { encodeToBase64 } = utils;
+const { encodeToBase64, postAttestationProfile } = utils;
 
 // const { ErrorWithMessage } = utils.ErrorWithMessage;
 /**
@@ -31,9 +30,9 @@ class TelegramStrategy extends BaseStrategy {
         }
     }
 
-    onAttestedOnlyWalletAddress(deviceAddress, walletAddress) {
+    verifyWalletAddress(deviceAddress, walletAddress) {
         if (this.validate.isWalletAddress(walletAddress)) {
-            // TODO: check session again
+            // TODO: check session again 
 
             const query = new URLSearchParams({ address: deviceAddress });
             const encodedData = encodeToBase64(query);
