@@ -80,32 +80,28 @@ class TelegramStrategy extends BaseStrategy {
 
         const stage = new Scenes.Stage([inputAddressScene]);
 
-        eventBus.on('ATTESTATION_KIT_ATTESTED', ({ data, unit }) => {
-            if (unit && data.userId) {
-                const message = `Attestation unit: <a href="https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${encodeURIComponent(unit)}">${unit}</a>`;
-                this.client.telegram.sendMessage(data.userId, message, { parse_mode: 'HTML' });
-            }
-        });
-
         this.client.use(session());
         this.client.use(stage.middleware());
 
         this.client.start(async (ctx) => {
             let address;
+            let deviceAddress;
 
             try {
                 if (ctx.payload) {
                     const decodedData = Buffer.from(ctx.payload, 'base64').toString('utf-8');
                     const decodedPayload = decodeURIComponent(decodedData);
                     const params = new URLSearchParams(decodedPayload);
-                    address = params.get('address');
+
+                    deviceAddress = params.get('address');
+                    address = this.sessionStore.getSessionWalletAddress(deviceAddress);
                 }
             } catch {
                 console.error('Error while decoding payload');
                 return ctx.reply('UNKNOWN_ERROR, please try again later');
             }
 
-            const { username, id } = ctx.update.message.from;
+            const { username, id: userId } = ctx.update.message.from;
 
             await ctx.reply(dictionary.common.WELCOME);
 
