@@ -1,14 +1,13 @@
 const { Telegraf, Scenes, session, Markup } = require('telegraf');
 const isArray = require('lodash/isArray');
-const eventBus = require('ocore/event_bus.js');
 const conf = require('ocore/conf');
 const device = require('ocore/device');
 
 const { utils, BaseStrategy, dictionary } = require('attestation-kit');
 
-// const TELEGRAM_BASE_URL = 'https://t.me/';
+const TELEGRAM_BASE_URL = 'https://t.me/';
 
-// const { encodeToBase64 } = utils;
+const { encodeToBase64 } = utils;
 
 // const { ErrorWithMessage } = utils.ErrorWithMessage;
 /**
@@ -50,8 +49,20 @@ class TelegramStrategy extends BaseStrategy {
         device.sendMessageToDevice(deviceAddress, 'text', dictionary.wallet.ASK_VERIFY_FN(walletAddress));
     }
 
-    viewAttestationData(id, username) {
-        return '<b>Your data for attestation:</b> \n\n' + `ID: ${id ?? 'N/A'} \n` + `Username: ${username ? BaseStrategy.escapeHtml(username) : 'N/A'}\n\n`;
+    viewAttestationData(id, username, address) {
+        return '<b>Your data for attestation:</b> \n\n'
+            + `ID: ${id ?? 'N/A'} \n`
+            + `Username: ${username ? BaseStrategy.escapeHtml(username) : 'N/A'}`
+            + (address ? `\nWallet address: <a href='https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${address}'>${address}</a>` : '');
+    }
+
+    onAttested(deviceAddress, { data, unit }) {
+        if (unit && data.userId && deviceAddress) {
+            const message = `Attestation unit: <a href="https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${encodeURIComponent(unit)}">${unit}</a>`;
+            this.client.telegram.sendMessage(data.userId, message, { parse_mode: 'HTML' });
+
+            // TODO: send to device
+        }
     }
 
     /**
