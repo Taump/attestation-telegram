@@ -124,7 +124,7 @@ class TelegramStrategy extends BaseStrategy {
 
                 if (existedAttestations) {
                     if (existedAttestations.status === "attested") {
-                        return await ctx.reply(dictionary.common.ALREADY_ATTESTED(address, { username, userId }));
+                        return await ctx.reply(dictionary.common.ALREADY_ATTESTED);
                     } else {
                         orderId = existedAttestations[0].id;
                     }
@@ -235,7 +235,7 @@ class TelegramStrategy extends BaseStrategy {
                     if (isArray(orders) && orders.length > 0) {
                         const isDataHasBeenAlreadyAttested = orders.find(order => order.user_wallet_address === walletAddress && order.status === 'attested');
                         if (isDataHasBeenAlreadyAttested) {
-                            await ctx.reply(dictionary.common.ALREADY_ATTESTED(walletAddress, { username, userId: id }));
+                            await ctx.reply(dictionary.common.ALREADY_ATTESTED);
                             return await ctx.scene.leave();
                         } else {
                             await ctx.reply(dictionary.common.ADDRESS_RECEIVED);
