@@ -86,6 +86,11 @@ class TelegramStrategy extends BaseStrategy {
         this.client.use(session());
         this.client.use(stage.middleware());
 
+        this.client.catch((err, ctx) => {
+            console.error('Bot error:', err);
+            ctx.reply('An error occurred while processing your request. Please try again later.');
+        });
+
         this.client.start(async (ctx) => {
             let address;
             let deviceAddress;
@@ -144,6 +149,7 @@ class TelegramStrategy extends BaseStrategy {
                         }
 
                     } catch (err) {
+                        this.logger.error('attestedCallbackAction: Error while processing address:', err);
                         await ctx.reply('Unknown error occurred');
                     }
                 });
@@ -155,6 +161,7 @@ class TelegramStrategy extends BaseStrategy {
 
                         await ctx.scene.enter('inputAddressScene');
                     } catch (err) {
+                        this.logger.error('removeCallbackAction: Error while processing address:', err);
                         await ctx.reply('removeCallbackAction: Unknown error occurred');
                     } finally {
                         await ctx.answerCbQuery();
