@@ -113,6 +113,8 @@ class TelegramStrategy extends BaseStrategy {
 
             await ctx.reply(dictionary.common.WELCOME);
 
+            if (!username || !userId) return await ctx.reply(dictionary.telegram.USERNAME_NOT_FOUND);
+
             if (address) {
                 const userDataMessage = this.viewAttestationData(userId, username, address);
                 await ctx.reply(userDataMessage, { parse_mode: 'HTML' });
