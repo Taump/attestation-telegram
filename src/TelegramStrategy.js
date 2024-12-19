@@ -130,6 +130,8 @@ class TelegramStrategy extends BaseStrategy {
                 this.client.action('attestedCallbackAction', async (ctx) => {
                     const dataObj = { username, userId };
 
+                    this.logger.error('attestedCallbackAction: dataObj:', dataObj);
+
                     try {
                         await ctx.answerCbQuery();
                         await ctx.deleteMessage();
