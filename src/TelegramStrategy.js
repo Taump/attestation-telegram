@@ -118,7 +118,19 @@ class TelegramStrategy extends BaseStrategy {
             if (address) {
                 const userDataMessage = this.viewAttestationData(userId, username, address);
                 await ctx.reply(userDataMessage, { parse_mode: 'HTML' });
-                const orderId = await this.db.createAttestationOrder({ username, userId }, address, true);
+
+                const existedAttestations = await this.db.getAttestationOrders({ data: { userId, username }, address });
+                let orderId;
+
+                if (existedAttestations) {
+                    if (existedAttestations.status === "attested") {
+                        return await ctx.reply(dictionary.common.ALREADY_ATTESTED(address, { username, userId }));
+                    } else {
+                        orderId = existedAttestations[0].id;
+                    }
+                } else {
+                    orderId = await this.db.createAttestationOrder({ username, userId }, address, true);
+                }
 
                 if (deviceAddress) {
                     await this.db.updateDeviceAddressInAttestationOrder(orderId, deviceAddress);
