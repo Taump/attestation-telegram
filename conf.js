@@ -15,6 +15,7 @@ exports.control_addresses = [''];
 exports.payout_address = 'WHERE THE MONEY CAN BE SENT TO';
 exports.hub = process.env.testnet ? 'obyte.org/bb-test' : 'obyte.org/bb';
 exports.deviceName = 'Telegram attestation service';
+exports.minAttestorBalanceForStart = 1e6;
 
 exports.bIgnoreUnpairRequests = true;
 exports.bSingleAddress = true;
