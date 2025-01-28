@@ -36,8 +36,8 @@ class TelegramStrategy extends BaseStrategy {
             const encodedData = encodeToBase64(query);
             const url = TELEGRAM_BASE_URL + process.env.TELEGRAM_BOT_USERNAME + `?start=${encodedData}`;
 
-            device.sendMessageToDevice(deviceAddress, 'text', `Your wallet address was successfully verify: ${walletAddress}`);
-            device.sendMessageToDevice(deviceAddress, 'text', `Let's continue with the next step in telegram: \n ${url}`);
+            device.sendMessageToDevice(deviceAddress, 'text', `Your wallet address ${walletAddress} was successfully verified`);
+            device.sendMessageToDevice(deviceAddress, 'text', `Please continue in telegram: \n ${url}`);
         } else {
             return device.sendMessageToDevice(deviceAddress, 'text', dictionary.common.INVALID_WALLET_ADDRESS);
         }
