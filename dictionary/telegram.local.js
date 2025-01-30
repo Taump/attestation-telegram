@@ -1,4 +1,5 @@
 module.exports = {
+    WELCOME: 'Welcome to Telegram Attestation Bot',
     ATTESTATION_COMMAND: 'To get started, please use the /attest command.',
     SEND_WALLET: 'Please send your own wallet address; it will be verified.',
     COMMAND_ATTESTATION_AGAIN: 'To start the attestation process again, please use the /attest command.',

@@ -44,7 +44,7 @@ class TelegramStrategy extends BaseStrategy {
     }
 
     onDevicePaired(deviceAddress) {
-        device.sendMessageToDevice(deviceAddress, 'text', dictionary.common.WELCOME);
+        device.sendMessageToDevice(deviceAddress, 'text', dictionary.telegram.WELCOME);
         device.sendMessageToDevice(deviceAddress, 'text', dictionary.wallet.ASK_ADDRESS);
     }
 
@@ -111,7 +111,7 @@ class TelegramStrategy extends BaseStrategy {
 
             const { username, id: userId } = ctx.update.message.from;
 
-            await ctx.reply(dictionary.common.WELCOME);
+            await ctx.reply(dictionary.telegram.WELCOME);
 
             if (!username || !userId) return await ctx.reply(dictionary.telegram.USERNAME_NOT_FOUND);
 
