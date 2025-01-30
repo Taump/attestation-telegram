@@ -102,7 +102,7 @@ class TelegramStrategy extends BaseStrategy {
                     const params = new URLSearchParams(decodedPayload);
 
                     deviceAddress = params.get('address');
-                    address = this.sessionStore.getSessionWalletAddress(deviceAddress);
+                    address = await this.sessionStore.getSessionWalletAddress(deviceAddress);
                 }
             } catch {
                 console.error('Error while decoding payload');
@@ -155,6 +155,7 @@ class TelegramStrategy extends BaseStrategy {
                         const unit = await utils.postAttestationProfile(address, dataObj);
 
                         await this.db.updateUnitAndChangeStatus(dataObj, address, unit);
+                        await this.sessionStore.deleteSessionWalletAddress(deviceAddress);
 
                         const message = `Attestation unit: <a href="https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${encodeURIComponent(unit)}">${unit}</a>`;
 
@@ -173,7 +174,7 @@ class TelegramStrategy extends BaseStrategy {
                 this.client.action('removeCallbackAction', async (ctx) => {
                     try {
                         await this.db.removeWalletAddressInAttestationOrder({ username, userId }, address);
-                        this.sessionStore.deleteSessionWalletAddress(deviceAddress);
+                        await this.sessionStore.deleteSessionWalletAddress(deviceAddress);
 
                         await ctx.scene.enter('inputAddressScene');
                     } catch (err) {
