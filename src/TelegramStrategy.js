@@ -136,7 +136,7 @@ class TelegramStrategy extends BaseStrategy {
                     await this.db.updateDeviceAddressInAttestationOrder(orderId, deviceAddress);
                 }
 
-                await ctx.reply('Are you confirm this information?', Markup.inlineKeyboard([
+                await ctx.reply('Is everything correct?', Markup.inlineKeyboard([
                     [Markup.button.callback('Yes', 'attestedCallbackAction')],
                     [Markup.button.callback('No, I want to change', 'removeCallbackAction')]
                 ]).resize().oneTime());

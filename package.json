@@ -10,7 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "telegraf": "^4.16.3",
-    "attestation-kit": "git+https://github.com/byteball/attestation-kit.git"
+    "attestation-kit": "git+https://github.com/byteball/attestation-kit.git",
+    "telegraf": "^4.16.3"
   }
 }
