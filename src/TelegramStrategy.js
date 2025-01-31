@@ -113,23 +113,23 @@ class TelegramStrategy extends BaseStrategy {
                 const userDataMessage = this.viewAttestationData(userId, username, address);
                 await ctx.reply(userDataMessage, { parse_mode: 'HTML' });
 
-                const existedAttestation = await this.db.getAttestationOrders({ data: { userId, username }, address });
+                const existingAttestation = await this.db.getAttestationOrders({ data: { userId, username }, address });
                 let orderId;
 
-                if (existedAttestation) {
-                    if (existedAttestation.status === "attested") {
+                if (existingAttestation) {
+                    if (existingAttestation.status === "attested") {
 
                         if (deviceAddress) {
-                            const unit = existedAttestation.unit;
+                            const unit = existingAttestation.unit;
 
                             device.sendMessageToDevice(deviceAddress, 'text', `Sorry, but you have already attested your wallet address with the same data. Attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit} . If you want to re-attest, please use [attest](command:attest)`);
                         }
 
                         return await ctx.reply(dictionary.common.ALREADY_ATTESTED);
                     } else {
-                        orderId = existedAttestation.id;
+                        orderId = existingAttestation.id;
 
-                        if (existedAttestation.address !== address) {
+                        if (existingAttestation.address !== address) {
                             this.db.updateWalletAddressInAttestationOrder(orderId, address);
                         }
                     }
