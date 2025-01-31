@@ -155,7 +155,7 @@ class TelegramStrategy extends BaseStrategy {
                         const unit = await utils.postAttestationProfile(address, dataObj);
 
                         await this.db.updateUnitAndChangeStatus(dataObj, address, unit);
-                        await this.sessionStore.deleteSessionWalletAddress(deviceAddress);
+                        await this.sessionStore.deleteSession(deviceAddress);
 
                         const message = `Attestation unit: <a href="https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${encodeURIComponent(unit)}">${unit}</a>`;
 
@@ -174,7 +174,7 @@ class TelegramStrategy extends BaseStrategy {
                 this.client.action('removeCallbackAction', async (ctx) => {
                     try {
                         await this.db.removeWalletAddressInAttestationOrder({ username, userId }, address);
-                        await this.sessionStore.deleteSessionWalletAddress(deviceAddress);
+                        await this.sessionStore.deleteSession(deviceAddress);
 
                         await ctx.scene.enter('inputAddressScene');
                     } catch (err) {
