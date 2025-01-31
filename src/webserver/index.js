@@ -1,11 +1,11 @@
 const conf = require('ocore/conf');
 const { webserver: fastifyInstance, utils } = require("attestation-kit");
 
-const verifyUrlController = require('./controllers/verifyUrlController');
+const pairingUrlController = require('./controllers/pairingUrlController');
 
 module.exports = async () => {
     try {
-        fastifyInstance.get('/verify/:address', verifyUrlController);
+        fastifyInstance.get('/pairing', pairingUrlController);
         await fastifyInstance.listen({ port: conf.webserverPort, host: '0.0.0.0' });
 
         utils.logger.info('Server running on port', conf.webserverPort);
