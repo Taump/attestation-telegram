@@ -44,8 +44,10 @@ class TelegramStrategy extends BaseStrategy {
         }
     }
 
-    async onDevicePaired(deviceAddress) {
-        if (!await this.sessionStore.getSession(deviceAddress)) {
+    async onAttestationProcessRequested(deviceAddress) {
+        const session = await this.sessionStore.getSession(deviceAddress);
+
+        if (!session) {
             device.sendMessageToDevice(deviceAddress, 'text', dictionary.telegram.WELCOME);
         }
 
