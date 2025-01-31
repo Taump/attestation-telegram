@@ -7,7 +7,8 @@ const webserver = require("./webserver");
 
 start(async () => {
     new TelegramStrategy({
-        token: process.env.TELEGRAM_BOT_TOKEN
+        token: process.env.TELEGRAM_BOT_TOKEN,
+        domain: process.env.domain
     })
 
     await webserver();
