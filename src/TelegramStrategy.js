@@ -179,9 +179,9 @@ class TelegramStrategy extends BaseStrategy {
                 this.logger.error('Failed to launch Telegram bot:', err);
             });
 
-        // Enable graceful stop
-        process.once('SIGINT', () => this.client.stop('SIGINT'))
-        process.once('SIGTERM', () => this.client.stop('SIGTERM'))
+        // // Enable graceful stop
+        // process.once('SIGINT', () => this.client.stop('SIGINT'))
+        // process.once('SIGTERM', () => this.client.stop('SIGTERM'))
     }
 }
 
