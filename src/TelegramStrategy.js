@@ -124,7 +124,7 @@ class TelegramStrategy extends BaseStrategy {
                         if (deviceAddress) {
                             const unit = existingAttestation.unit;
 
-                            device.sendMessageToDevice(deviceAddress, 'text', `Sorry, but you have already attested your wallet address with the same data. Attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit} . If you want to re-attest, please use [attest](command:attest)`);
+                            device.sendMessageToDevice(deviceAddress, 'text', `Sorry, but you have already attested your wallet address with the same data. Attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit} . If you want to attest another wallet address or telegram account, please use [attest](command:attest)`);
                         }
 
                         return await ctx.reply(dictionary.common.ALREADY_ATTESTED);
