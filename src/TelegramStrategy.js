@@ -146,12 +146,12 @@ class TelegramStrategy extends BaseStrategy {
                     await this.db.updateUnitAndChangeStatus(dataObj, address, unit);
                     await this.sessionStore.deleteSession(deviceAddress);
 
-                    const message = `Attestation unit: <a href="https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${encodeURIComponent(unit)}">${unit}</a>`;
+                    const message = `Your telegram account is now attested, attestation unit: <a href="https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${encodeURIComponent(unit)}">${unit}</a>`;
 
                     ctx.reply(message, { parse_mode: 'HTML' });
 
                     if (order.user_device_address) {
-                        return device.sendMessageToDevice(order.user_device_address, 'text', `Attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit}`);
+                        return device.sendMessageToDevice(order.user_device_address, 'text', `Your telegram account is now attested, attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit}`);
                     }
 
                 } catch (err) {
