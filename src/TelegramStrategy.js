@@ -61,7 +61,7 @@ class TelegramStrategy extends BaseStrategy {
         return '<b>Your data for attestation:</b> \n\n'
             + `ID: ${id ?? 'N/A'} \n`
             + `Username: ${username ? BaseStrategy.escapeHtml(username) : 'N/A'}`
-            + (address ? `\nWallet address: <a href='https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${address}'>${address}</a>` : '');
+            + (address ? `\nWallet address: ${address}` : '');
     }
 
     /**
@@ -120,7 +120,7 @@ class TelegramStrategy extends BaseStrategy {
                         if (deviceAddress) {
                             const unit = existingAttestation.unit;
 
-                            device.sendMessageToDevice(deviceAddress, 'text', `You have already attested your wallet address with the same data. Attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit} . If you want to attest another wallet address or telegram account, please use [attest](command:attest)`);
+                            device.sendMessageToDevice(deviceAddress, 'text', `You have already attested your wallet address with the same data. Attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit} . If you want to attest another wallet address or telegram account, please say [attest](command:attest)`);
                         }
 
                         return await ctx.reply(dictionary.common.ALREADY_ATTESTED);
@@ -156,7 +156,8 @@ class TelegramStrategy extends BaseStrategy {
                     ctx.reply(message, { parse_mode: 'HTML' });
 
                     if (order.user_device_address) {
-                        return device.sendMessageToDevice(order.user_device_address, 'text', `Your telegram account is now attested, attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit}`);
+                        device.sendMessageToDevice(order.user_device_address, 'text', `Your telegram account is now attested, attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit}`);
+                        return device.sendMessageToDevice(order.user_device_address, 'text', `If you want to attest another wallet address or telegram account, please say [attest](command:attest)`);
                     }
 
                 } catch (err) {
