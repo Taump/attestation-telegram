@@ -34,10 +34,7 @@ class TelegramStrategy extends BaseStrategy {
     async walletAddressVerified(deviceAddress, walletAddress) {
         if (this.validate.isWalletAddress(walletAddress)) {
             const session = await this.sessionStore.getSession(deviceAddress);
-
-            const query = new URLSearchParams({ a: deviceAddress, i: session.id.slice(0, 4) });
-            const encodedData = utils.encodeToBase64(query);
-            const url = TELEGRAM_BASE_URL + process.env.TELEGRAM_BOT_USERNAME + `?start=${encodedData}`;
+            const url = TELEGRAM_BASE_URL + process.env.TELEGRAM_BOT_USERNAME + `?start=${deviceAddress}-${session.id}`;
 
             device.sendMessageToDevice(deviceAddress, 'text', `Your wallet address ${walletAddress} was successfully verified`);
             device.sendMessageToDevice(deviceAddress, 'text', `Please continue in telegram: \n ${url}`);
@@ -85,18 +82,17 @@ class TelegramStrategy extends BaseStrategy {
             let deviceAddress;
             let sessionId;
 
-            try {
-                if (ctx.payload) {
-                    const decodedData = Buffer.from(ctx.payload, 'base64').toString('utf-8');
-                    const decodedPayload = decodeURIComponent(decodedData);
-                    const params = new URLSearchParams(decodedPayload);
-                    deviceAddress = params.get('a');
-                    sessionId = params.get('i');
-                    address = await this.sessionStore.getSessionWalletAddress(deviceAddress);
+            if (ctx.payload) {
+                const [payloadDeviceAddress, payloadSessionId] = ctx.payload.split('-');
+
+                if (payloadDeviceAddress && payloadSessionId && payloadDeviceAddress.length === 33 && payloadSessionId.length === 10) {
+                    deviceAddress = payloadDeviceAddress;
+                    sessionId = payloadSessionId;
+                } else {
+                    return ctx.reply(dictionary.telegram.INVALID_SESSION);
                 }
-            } catch (e) {
-                console.error('Error while decoding payload', e);
-                return ctx.reply('UNKNOWN_ERROR, please try again later');
+
+                address = await this.sessionStore.getSessionWalletAddress(deviceAddress);
             }
 
             const { username, id: userId } = ctx.update.message.from;
@@ -107,7 +103,7 @@ class TelegramStrategy extends BaseStrategy {
 
             const session = await this.sessionStore.getSession(deviceAddress);
 
-            if (!session || session.id.slice(0, 4) !== sessionId.slice(0, 4)) {
+            if (!session || session.id !== sessionId) {
                 return await ctx.reply(dictionary.telegram.INVALID_SESSION);
             }
 
