@@ -120,7 +120,7 @@ class TelegramStrategy extends BaseStrategy {
                         if (deviceAddress) {
                             const unit = existingAttestation.unit;
 
-                            device.sendMessageToDevice(deviceAddress, 'text', `Sorry, but you have already attested your wallet address with the same data. Attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit} . If you want to attest another wallet address or telegram account, please use [attest](command:attest)`);
+                            device.sendMessageToDevice(deviceAddress, 'text', `You have already attested your wallet address with the same data. Attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit} . If you want to attest another wallet address or telegram account, please use [attest](command:attest)`);
                         }
 
                         return await ctx.reply(dictionary.common.ALREADY_ATTESTED);
@@ -164,7 +164,7 @@ class TelegramStrategy extends BaseStrategy {
                     await ctx.reply('Unknown error occurred');
                 }
             } else {
-                return await ctx.reply(`Sorry, but we couldn't find your wallet address. Please follow instructions from <a href='${this.options.domain}/pairing'>Obyte wallet</a>`, { parse_mode: 'HTML' });
+                return await ctx.reply(`Sorry, but we couldn't find your wallet address. Please start the attestation from the <a href='${this.options.domain}/pairing'>Telegram attestation bot</a> in your Obyte wallet. Download Obyte wallet from https://obyte.org if you don't have one yet.`, { parse_mode: 'HTML' });
             }
         });
 
