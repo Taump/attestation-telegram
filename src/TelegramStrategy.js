@@ -31,9 +31,11 @@ class TelegramStrategy extends BaseStrategy {
         }
     }
 
-    walletAddressVerified(deviceAddress, walletAddress) {
+    async walletAddressVerified(deviceAddress, walletAddress) {
         if (this.validate.isWalletAddress(walletAddress)) {
-            const query = new URLSearchParams({ address: deviceAddress });
+            const session = await this.sessionStore.getSession(deviceAddress);
+
+            const query = new URLSearchParams({ a: deviceAddress, i: session.id.slice(0, 4) });
             const encodedData = utils.encodeToBase64(query);
             const url = TELEGRAM_BASE_URL + process.env.TELEGRAM_BOT_USERNAME + `?start=${encodedData}`;
 
@@ -81,18 +83,19 @@ class TelegramStrategy extends BaseStrategy {
         this.client.start(async (ctx) => {
             let address;
             let deviceAddress;
+            let sessionId;
 
             try {
                 if (ctx.payload) {
                     const decodedData = Buffer.from(ctx.payload, 'base64').toString('utf-8');
                     const decodedPayload = decodeURIComponent(decodedData);
                     const params = new URLSearchParams(decodedPayload);
-
-                    deviceAddress = params.get('address');
+                    deviceAddress = params.get('a');
+                    sessionId = params.get('i');
                     address = await this.sessionStore.getSessionWalletAddress(deviceAddress);
                 }
-            } catch {
-                console.error('Error while decoding payload');
+            } catch (e) {
+                console.error('Error while decoding payload', e);
                 return ctx.reply('UNKNOWN_ERROR, please try again later');
             }
 
@@ -101,6 +104,12 @@ class TelegramStrategy extends BaseStrategy {
             await ctx.reply(dictionary.telegram.WELCOME);
 
             if (!username || !userId) return await ctx.reply(dictionary.telegram.USERNAME_NOT_FOUND);
+
+            const session = await this.sessionStore.getSession(deviceAddress);
+
+            if (!session || session.id.slice(0, 4) !== sessionId.slice(0, 4)) {
+                return await ctx.reply(dictionary.telegram.INVALID_SESSION);
+            }
 
             if (address) {
                 const userDataMessage = this.viewAttestationData(userId, username, address);
@@ -115,7 +124,7 @@ class TelegramStrategy extends BaseStrategy {
                         if (deviceAddress) {
                             const unit = existingAttestation.unit;
 
-                            device.sendMessageToDevice(deviceAddress, 'text', `Sorry, but you have already attested your wallet address with the same data. Attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit} . If you want to attest another wallet address or telegram account, please use [attest](command:attest)`);
+                            device.sendMessageToDevice(deviceAddress, 'text', `Sorry, but you have already attested your wallet address with the same data. Attestation unit: https://${conf.testnet ? 'testnet' : ''}explorer.obyte.org/${unit} . If you want to re-attest, please use [attest](command:attest)`);
                         }
 
                         return await ctx.reply(dictionary.common.ALREADY_ATTESTED);
@@ -169,10 +178,6 @@ class TelegramStrategy extends BaseStrategy {
             }).catch((err) => {
                 this.logger.error('Failed to launch Telegram bot:', err);
             });
-
-        // // Enable graceful stop
-        // process.once('SIGINT', () => this.client.stop('SIGINT'))
-        // process.once('SIGTERM', () => this.client.stop('SIGTERM'))
     }
 }
 
