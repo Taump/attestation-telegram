@@ -7,7 +7,7 @@ exports.bNoPassphrase = true;
 exports.webPort = null;
 exports.storage = 'sqlite';
 
-exports.webserverPort = process.env.testnet ? 5001 : 5005;
+exports.webserverPort = process.env.testnet ? 5001 : 5006;
 exports.testnet = process.env.testnet == "1";
 
 exports.permanent_pairing_secret = '*';
